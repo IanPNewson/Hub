@@ -1,0 +1,18 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net6.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Remove="HubDataReceiver.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\3rdParty\SuperSimpleTcp\src\SuperSimpleTcp\SuperSimpleTcp.csproj" />
+    <ProjectReference Include="..\HubShared\HubShared.csproj" />
+  </ItemGroup>
+
+</Project>
