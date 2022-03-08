@@ -58,7 +58,7 @@ public class HubServer : HubDataReceiver, IDisposable
             {
                 if (Debugger.IsAttached)
                     Debugger.Break();
-                _server.Send(sender, $"An error occurred while handling the server reques '{message.Serialize()}': {ex.Message}");
+                this.Send(sender, new ExceptionMessage(ex.Message));
             }
         }
         else

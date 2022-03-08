@@ -42,6 +42,9 @@ using (var client = new HubClient(typeof(TrickMessage)))
             case '2':
                 message = new HubServerRequestMessageTypes();
                 break;
+            case '3':
+                message = new ThrowExceptionServerMessage();
+                break;
             default:
                 message = new HubMessage($"Test message");
                 break;
