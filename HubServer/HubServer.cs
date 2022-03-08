@@ -15,9 +15,13 @@ public class HubServer : HubDataReceiver, IDisposable
         .Subdir(nameof(HubServer))
         .EnsureExists();
 
+    public HubServer(IHubConfiguration? configuration = null) : base(configuration)
+    {
+    }
+
     public void Start()
     {
-        _server = new SimpleTcpServer("0.0.0.0", StfcHubConstants.PORT);
+        _server = new SimpleTcpServer("0.0.0.0", this.Configuration.Port);
         _server.Events.DataReceived += Events_DataReceived;
         _server.Events.ClientConnected += (sender, args) =>
         {

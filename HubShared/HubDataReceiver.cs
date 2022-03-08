@@ -12,6 +12,13 @@ namespace HubShared
         public static readonly byte[] TERMINATOR = new byte[] { (byte)'\n' };
         public const char SEPARATOR = (char)127;
 
+        public IHubConfiguration Configuration { get; }
+
+        protected HubDataReceiver(IHubConfiguration? configuration)
+        {
+            Configuration = configuration ?? new EnvironmentConfiguration();
+        }
+
         public virtual void Dispose()
         {
             _buffer.Dispose();

@@ -1,9 +1,8 @@
-﻿namespace HubShared
+﻿namespace HubShared;
+
+public class ExceptionMessage : HubMessage
 {
-    public class ExceptionMessage : HubMessage
+    public ExceptionMessage(string message) : base(message)
     {
-        public ExceptionMessage(string message) : base(message)
-        {
-        }
     }
 }
