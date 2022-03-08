@@ -1,12 +1,29 @@
-﻿using StfcHubClient;
-using StfcPipe;
+﻿using HubShared;
+using Hub;
+
 static void Write(string line) => Console.WriteLine(line);
 
 Thread.Sleep(2000);
 
-using (var client = new HubClient())
+using (var client = new HubClient(typeof(TrickMessage)))
 {
-    client.OnMessageReceivedFromHub += (sender, message) => Console.WriteLine(message.ToString());
+    client.OnMessageReceivedFromHub += (sender, message) =>
+    {
+        switch (message)
+        {
+            case HubServerResponseMessageTypes messageTypesResponse:
+                Write(nameof(HubServerResponseMessageTypes));
+                foreach (var typeName in messageTypesResponse.TypeNames)
+                    Write(typeName);
+                break;
+            default:
+                Console.WriteLine(message.ToString());
+                break;
+        }
+
+    };
+
+    client.Start();
 
     Write("Ready, press x to exit");
 
@@ -18,6 +35,12 @@ using (var client = new HubClient())
         {
             case '0':
                 message = new TrickMessage("fkdfjsdi", "jfifsdio");
+                break;
+            case '1':
+                message = new HubServerLoadDllRequest(@"C:\Users\Ian\source\repos\ReenableWifi\ReenableWifi\bin\Debug\net5.0\ReenableWifi.dll");
+                break;
+            case '2':
+                message = new HubServerRequestMessageTypes();
                 break;
             default:
                 message = new HubMessage($"Test message");

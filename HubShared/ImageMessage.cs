@@ -1,4 +1,4 @@
-﻿namespace StfcPipe
+﻿namespace HubShared
 {
     public abstract class ImageMessage : HubMessage
     {

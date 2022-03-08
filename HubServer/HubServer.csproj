@@ -11,6 +11,10 @@
   </ItemGroup>
 
   <ItemGroup>
+    <PackageReference Include="inhelpers" Version="2.0.2" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="..\..\3rdParty\SuperSimpleTcp\src\SuperSimpleTcp\SuperSimpleTcp.csproj" />
     <ProjectReference Include="..\HubShared\HubShared.csproj" />
   </ItemGroup>

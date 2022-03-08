@@ -1,15 +1,16 @@
-﻿using StfcPipe;
-using SuperSimpleTcp;
+﻿using SuperSimpleTcp;
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 
-namespace StfcHubShared
+namespace HubShared
 {
     public abstract class HubDataReceiver : IDisposable
     {
         private MemoryStream _buffer = new MemoryStream();
         public static readonly byte[] TERMINATOR = new byte[] { (byte)'\n' };
+        public const char SEPARATOR = (char)127;
 
         public virtual void Dispose()
         {
@@ -22,9 +23,10 @@ namespace StfcHubShared
             {
                 if (b == '\n')
                 {
-                    ProcessMessage(e.IpPort);
+                    var bytes = _buffer.ToArray();
                     _buffer.Dispose();
                     _buffer = new MemoryStream();
+                    ProcessMessage(bytes, e.IpPort);
                 }
                 else
                 {
@@ -37,21 +39,40 @@ namespace StfcHubShared
         {
             try
             {
-                var parts = line.Split(':');
+                var parts = line.Split(SEPARATOR, StringSplitOptions.RemoveEmptyEntries);
                 var typeName = parts[0];
                 if (!typeName.Contains("."))
                     typeName = $"{typeof(HubMessage).Namespace}.{typeName}";
-                var type = Type.GetType(typeName);
+                Type type = LoadType(typeName);
 
                 if (type == null) return new UnknownMessageTypeMessage(parts);
 
+                var isArrayCtor = true;
+
                 var args = parts.Skip(1).ToArray();
 
-                var constructor = type.GetConstructor(Enumerable.Range(0, args.Length).Select(_ => typeof(string)).ToArray());
+                var constructor = type.GetConstructor(new[] { typeof(string[]) });
+                if (constructor == null)
+                    constructor = type.GetConstructor(new[] { typeof(IEnumerable<string>) });
+                if (constructor == null)
+                {
+                    constructor = type.GetConstructor(Enumerable.Range(0, args.Length).Select(_ => typeof(string)).ToArray());
+                    isArrayCtor = false;
+                }
 
                 if (constructor == null) return new UnknownMessageTypeMessage(parts);
 
-                var instance = (HubMessage)constructor.Invoke(args);
+                object[] ctorArgs;
+                if (isArrayCtor)
+                {
+                    ctorArgs = new object[] { args };
+                }
+                else
+                {
+                    ctorArgs = args;
+                }
+
+                var instance = (HubMessage)constructor.Invoke(ctorArgs);
                 return instance;
             }
             catch (Exception ex)
@@ -60,9 +81,13 @@ namespace StfcHubShared
             }
         }
 
-        private void ProcessMessage(string sender)
+        protected virtual Type LoadType(string typeName)
         {
-            var bytes = _buffer.ToArray();
+            return Type.GetType(typeName);
+        }
+
+        private void ProcessMessage(byte[] bytes, string sender)
+        {
             if (bytes.Length == 0) return;
 
             var line = System.Text.Encoding.ASCII.GetString(bytes);
@@ -71,12 +96,12 @@ namespace StfcHubShared
             var message = ParseMessage(line);
 
             OnMessageReceivedFromHub?.Invoke(this, message);
-            OnMessageReceived(message);
+            OnMessageReceived(message, sender);
         }
 
         public event EventHandler<HubMessage>? OnMessageReceivedFromHub;
 
-        public abstract void OnMessageReceived(HubMessage message);
+        public abstract void OnMessageReceived(HubMessage message, string sender);
 
     }
 }

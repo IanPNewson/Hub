@@ -1,9 +1,17 @@
-﻿namespace StfcPipe
+﻿using System;
+using System.Linq;
+
+namespace HubShared
 {
     public class HubMessage
     {
 
         private string[] _args;
+
+        protected string[] Args
+        {
+            get => _args;
+        }
 
         public HubMessage(string arg1) : this(new[] { arg1 }) { }
         public HubMessage(string arg1, string arg2) : this(new[] { arg1, arg2 }) { }
@@ -16,12 +24,15 @@
 
         public string Serialize()
         {
-            return this.GetType().Name + ":" + string.Join(":", _args);
+            if (_args.Any(x => x.Contains(HubDataReceiver.SEPARATOR)))
+                throw new ArgumentException($"Arguments may not contain the separator character '{HubDataReceiver.SEPARATOR}'");
+            return $"{GetType().Name}{HubDataReceiver.SEPARATOR}{string.Join(HubDataReceiver.SEPARATOR, _args)}";
         }
 
         public override string ToString()
         {
-            return this.Serialize();
+            return Serialize();
         }
     }
+
 }
