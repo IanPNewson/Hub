@@ -22,11 +22,7 @@ do
         }
         else
         {
-            Write($"Received message from hub: {args}, broadcasting to:");
-            foreach (var client in server.Clients)
-            {
-                Write(client);
-            }
+            Write($"Received message from hub: {args}, broadcasting to {server.Clients.Count()} hosts");
         }
     };
     server.Start();

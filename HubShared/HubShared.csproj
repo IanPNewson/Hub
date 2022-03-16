@@ -8,10 +8,13 @@
 	  <Authors>Ian Newson</Authors>
 	  <Product>Hub</Product>
 	  <PackageLicenseExpression>MIT</PackageLicenseExpression>
+	  <VersionPrefix>1.0.1</VersionPrefix>
+	  <AssemblyVersion>$(VersionPrefix)</AssemblyVersion>
+	  <FileVersion>$(VersionPrefix)</FileVersion>
   </PropertyGroup>
 
   <ItemGroup>
-    <Compile Remove="Class1.cs" />
+    <Compile Remove="UnknownMessageTypeMessage.cs" />
   </ItemGroup>
 
   <ItemGroup>

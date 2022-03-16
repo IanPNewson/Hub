@@ -42,6 +42,8 @@ public class HubServer : HubDataReceiver, IDisposable
 
     public override void OnMessageReceived(HubMessage message, string sender)
     {
+        Db.Log(message, MessageDirection.In);
+
         if (message is HubServerMessage)
         {
             try
@@ -145,12 +147,11 @@ public class HubServer : HubDataReceiver, IDisposable
         for (var i = _loadContexts.Count - 1; i >= 0; i--)
         {
             var ctx = _loadContexts[i];
-            foreach (var ass in ctx.Assemblies)
-            {
-                var type = ass.GetType(typeName);
-                if (type != null)
-                    return type;
-            }
+            var type = ctx.Assemblies
+                .SelectMany(ass => ass.GetTypes())
+                .FirstOrDefault(type => type.FullName == typeName);
+            if (type != null)
+                return type;
         }
         return base.LoadType(typeName);
     }
@@ -163,10 +164,10 @@ public class HubServer : HubDataReceiver, IDisposable
         }
     }
 
-    private void Send(string client, HubMessage message)
+    public void Send(string client, HubMessage message)
     {
-        _server.Send(client, message.Serialize());
-        _server.Send(client, TERMINATOR);
+        Db.Log(message, MessageDirection.Out);
+        _server.Send(client, this.SerializeMessage(message));
     }
 
     public IEnumerable<string> Clients

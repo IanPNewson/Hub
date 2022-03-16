@@ -7,20 +7,22 @@ namespace Hub;
 public class HubClient : HubDataReceiver
 {
     private SimpleTcpClient _client;
+    private List<Type> _messageTypes;
     private bool _keepRunning = true;
     private const int CONNECT_TIMEOUT = 10_000;
     private Thread _connectingThread = null;
-    private Dictionary<Type, List<Action<HubMessage?>>> _typeHandlers = new Dictionary<Type, List<Action<HubMessage?>>>();
+    private Dictionary<Type, List<Action<HubMessage>>> _typeHandlers = new Dictionary<Type, List<Action<HubMessage>>>();
+    private Dictionary<string, List<Action<HubMessage>>> _typeNameHandlers = new Dictionary<string, List<Action<HubMessage>>>();
 
     public bool IsConnected { get => _client.IsConnected; }
-    public Type[] MessageTypes { get; }
+    public IEnumerable<Type> MessageTypes { get => _messageTypes; }
 
     public HubClient(params Type[] messageTypes) : this(configuration: null, messageTypes) { }
 
     public HubClient(IHubConfiguration? configuration = null, params Type[] messageTypes) : base(configuration)
     {
         _client = new SimpleTcpClient(this.Configuration.Host, this.Configuration.Port);
-        MessageTypes = messageTypes;
+        _messageTypes = new List<Type>(messageTypes);
 
         _client.Logger = str =>
         {
@@ -36,28 +38,47 @@ public class HubClient : HubDataReceiver
         };
         _client.Events.Connected += (sender, args) =>
         {
-            if (messageTypes.Any())
+            if (MessageTypes.Any())
             {
-                this.Send(new HubServerRequestMessageTypes());
+                //this.Send(new HubServerRequestMessageTypes());
             }
             OnConnected?.Invoke(this, this);
+
+            _client.Logger("Connected");
         };
 
-        if (messageTypes.Any())
+        foreach (var type in MessageTypes)
         {
-            foreach(var type in messageTypes)
-            {
-                if (!type.IsSubclassOf(typeof(HubMessage)))
-                    throw new ArgumentException($"{type.FullName} does not derive from {nameof(HubMessage)}");
-            }
-            AddHandler<HubServerResponseMessageTypes>(CheckForMessageTypes);
+            if (!type.IsSubclassOf(typeof(HubMessage)))
+                throw new ArgumentException($"{type.FullName} does not derive from {nameof(HubMessage)}");
         }
+        //AddHandler<HubServerResponseMessageTypes>(CheckForMessageTypes);
+    }
 
+    public void AddHandler(string typeName, Action<HubMessage> handler)
+    {
+        if (!_typeNameHandlers.ContainsKey(typeName))
+        {
+            _typeNameHandlers.Add(typeName, new List<Action<HubMessage>>());
+        }
+        _typeNameHandlers[typeName].Add(handler);
     }
 
     public void AddHandler<T>(Action<T> handler)
         where T : HubMessage
     {
+        if (!_messageTypes.Contains(typeof(T)))
+        {
+            if (!IsConnected)
+            {
+                _messageTypes.Add(typeof(T));
+            }
+            else
+            {
+                throw new InvalidOperationException($"Cannot add a message handler of type '{typeof(T).FullName}' ass it was not requested before this client was started and therefore the server was not asked to load it");
+            }
+        }
+
         if (!_typeHandlers.ContainsKey(typeof(T)))
         {
             _typeHandlers.Add(typeof(T), new List<Action<HubMessage?>>());
@@ -67,7 +88,7 @@ public class HubClient : HubDataReceiver
 
     private void CheckForMessageTypes(HubServerResponseMessageTypes messageTypesResponse)
     {
-        var missingTypes = MessageTypes.Where(type => !messageTypesResponse.TypeNames.Contains(type.FullName));
+        var missingTypes = MessageTypes.Where(type => type.IsAssignableTo(typeof(HubServerMessage)) && !messageTypesResponse.TypeNames.Contains(type.FullName));
 
         var assemblies = missingTypes
             .Select(type => type.Assembly)
@@ -103,6 +124,7 @@ public class HubClient : HubDataReceiver
                         _client.Connect();
                     }
                     catch (SocketException ex) { }
+                    catch (NullReferenceException ex) { }//Bug in SuperSimpleTcp I think
                 }
                 Thread.Sleep(1000);
             }
@@ -128,18 +150,36 @@ public class HubClient : HubDataReceiver
         {
             if (group.Key.IsAssignableFrom(message.GetType()))
             {
-                foreach(var handler in group.Value)
+                foreach (var handler in group.Value)
                 {
                     handler(message);
                 }
             }
         }
+
+        foreach (var typeNameHandler in _typeNameHandlers.Where(x => IsTypeName(x.Key, message.TypeName))
+            .SelectMany(x => x.Value))
+        {
+            typeNameHandler(message);
+        }
+
         OnMessageReceivedFromHub?.Invoke(this, message);
+    }
+
+    protected bool IsTypeName(string typeName, string test)
+    {
+        if (!test.Contains(".") && typeName.Contains("."))
+            typeName = typeName.Substring(typeName.LastIndexOf(".") + 1);
+        if (!typeName.Contains(".") && test.Contains("."))
+            test = test.Substring(test.LastIndexOf(".") + 1);
+
+        return typeName == test;
     }
 
     public void Send(HubMessage message)
     {
-        _client.Send(message.Serialize());
-        _client.Send(TERMINATOR);
+        byte[] bytes = SerializeMessage(message);
+        _client.Send(bytes);
     }
+
 }

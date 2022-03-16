@@ -1,17 +1,20 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
-  <PropertyGroup>
-    <TargetFramework>net6.0</TargetFramework>
-    <ImplicitUsings>enable</ImplicitUsings>
-    <Nullable>enable</Nullable>
-    <PackageId>IN.Hub.Client</PackageId>
-    <Authors>Ian Newson</Authors>
-    <PackageLicenseExpression>MIT</PackageLicenseExpression>
-  </PropertyGroup>
+	<PropertyGroup>
+		<TargetFramework>net6.0</TargetFramework>
+		<ImplicitUsings>enable</ImplicitUsings>
+		<Nullable>enable</Nullable>
+		<PackageId>IN.Hub.Client</PackageId>
+		<Authors>Ian Newson</Authors>
+		<PackageLicenseExpression>MIT</PackageLicenseExpression>
+		<VersionPrefix>1.0.1</VersionPrefix>
+		<AssemblyVersion>$(VersionPrefix)</AssemblyVersion>
+		<FileVersion>$(VersionPrefix)</FileVersion>
+	</PropertyGroup>
 
-  <ItemGroup>
-    <ProjectReference Include="..\..\3rdParty\SuperSimpleTcp\src\SuperSimpleTcp\SuperSimpleTcp.csproj" />
-    <ProjectReference Include="..\HubShared\HubShared.csproj" />
-  </ItemGroup>
+	<ItemGroup>
+		<ProjectReference Include="..\..\3rdParty\SuperSimpleTcp\src\SuperSimpleTcp\SuperSimpleTcp.csproj" />
+		<ProjectReference Include="..\HubShared\HubShared.csproj" />
+	</ItemGroup>
 
 </Project>

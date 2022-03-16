@@ -8,7 +8,7 @@ namespace HubShared
 
         private string[] _args;
 
-        protected string[] Args
+        public virtual string[] Args
         {
             get => _args;
         }
@@ -26,7 +26,15 @@ namespace HubShared
         {
             if (_args.Any(x => x.Contains(HubDataReceiver.SEPARATOR)))
                 throw new ArgumentException($"Arguments may not contain the separator character '{HubDataReceiver.SEPARATOR}'");
-            return $"{GetType().Name}{HubDataReceiver.SEPARATOR}{string.Join(HubDataReceiver.SEPARATOR, _args)}";
+            return $"{this.TypeName}{HubDataReceiver.SEPARATOR}{string.Join(HubDataReceiver.SEPARATOR, Args)}{HubDataReceiver.TERMINATOR}";
+        }
+
+        public virtual string TypeName
+        {
+            get
+            {
+                return GetType().FullName;
+            }
         }
 
         public override string ToString()
